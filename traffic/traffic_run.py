@@ -13,8 +13,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.svm import LinearSVC
 
-data_dir = u'data/'
-img_root = u'3min-image-simple/'
+data_dir = 'data/'
+img_root = '3min-image-simple/'
 feature_data = 'feature_data.csv'
 
 # load image paths and labels
@@ -25,9 +25,9 @@ if not path.exists(path.join(data_dir, feature_data)):
     for cate in cates:
         apps = [f for f in os.listdir(path.join(img_root, cate))]
         for app in apps:
-            images = [f for f in os.listdir(path.join(img_root, cate, app)) if f.endswith(u'.png')]
-            for img in images:
-                images.append(path.join(img_root, cate, app, img))
+            files = [f for f in os.listdir(path.join(img_root, cate, app)) if f.endswith('.png')]
+            for f in files:
+                images.append(path.join(img_root, cate, app, f))
                 labels.append(cate)
 
     # load model
