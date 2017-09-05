@@ -43,7 +43,7 @@ if not path.exists(path.join(data_dir, feature_data)):
         next_to_last_tensor = sess.graph.get_tensor_by_name('pool_3:0')
         for i, img in enumerate(images):
             print('{}/{}\r'.format(i+1, images_num))
-            image_data = gfile.FastGFile(data_dir + img, 'rb').read()
+            image_data = gfile.FastGFile(img, 'rb').read()
             predictions = sess.run(next_to_last_tensor, {'DecodeJpeg/contents:0': image_data})
             features[i, :] = np.squeeze(predictions)
     df = pd.DataFrame(features)
