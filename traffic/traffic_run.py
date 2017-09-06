@@ -5,6 +5,7 @@
 
 import os
 import os.path as path
+import datetime
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -14,7 +15,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.svm import LinearSVC
 
 data_dir = 'data/'
-img_root = '3min-image-simple/'
+img_root = '3min-image-jpg/'
 feature_data = 'feature_data.csv'
 
 # load image paths and labels
@@ -25,7 +26,7 @@ if not path.exists(path.join(data_dir, feature_data)):
     for cate in cates:
         apps = [f for f in os.listdir(path.join(img_root, cate))]
         for app in apps:
-            files = [f for f in os.listdir(path.join(img_root, cate, app)) if f.endswith('.png')]
+            files = [f for f in os.listdir(path.join(img_root, cate, app)) if f.endswith('.jpg')]
             for f in files:
                 images.append(path.join(img_root, cate, app, f))
                 labels.append(cate)
@@ -42,13 +43,15 @@ if not path.exists(path.join(data_dir, feature_data)):
     with tf.Session() as sess:
         next_to_last_tensor = sess.graph.get_tensor_by_name('pool_3:0')
         for i, img in enumerate(images):
-            print('{}/{}\r'.format(i+1, images_num))
+            print('#{} {} {} ({}/{})\r'.format(i+1, datetime.datetime.now(), path.basename(img), i+1, images_num))
             image_data = gfile.FastGFile(img, 'rb').read()
             predictions = sess.run(next_to_last_tensor, {'DecodeJpeg/contents:0': image_data})
             features[i, :] = np.squeeze(predictions)
+    if not path.exists(data_dir):
+        os.makedirs(data_dir)
     df = pd.DataFrame(features)
     df['label'] = labels
-    df.to_csv(data_dir + 'data.csv', header=True, index=False)
+    df.to_csv(path.join(data_dir, feature_data), header=True, index=False)
 else:
     df = pd.read_csv(path.join(data_dir, feature_data), header=0)
     features = df[df.columns.difference(['label'])].values
