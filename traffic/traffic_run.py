@@ -18,7 +18,6 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
-data_dir = 'data/'
 img_root = '3min-image-jpg/'
 feature_data = 'feature_data.csv'
 
@@ -53,19 +52,17 @@ def save_feature():
             image_data = gfile.FastGFile(img, 'rb').read()
             predictions = sess.run(next_to_last_tensor, {'DecodeJpeg/contents:0': image_data})
             features[i, :] = np.squeeze(predictions)
-    if not path.exists(data_dir):
-        os.makedirs(data_dir)
     df = pd.DataFrame(features)
     df['label'] = labels
     df['app'] = app_names
-    df.to_csv(path.join(data_dir, feature_data), header=True, index=False)
+    df.to_csv(feature_data, header=True, index=False)
     return df
 
 
 if __name__ == '__main__':
     flag = 2
-    save_feature()
-    df = pd.read_csv(path.join(data_dir, feature_data), header=0)
+    # save_feature()
+    df = pd.read_csv(path.join(feature_data), header=0)
 
     if flag == 1:
         features = df[df.columns.difference(['label', 'app'])].values
