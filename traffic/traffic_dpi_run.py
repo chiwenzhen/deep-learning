@@ -17,9 +17,35 @@ from pandas_confusion import ConfusionMatrix
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
+import keras
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Flatten
+from keras.layers import Conv2D, MaxPooling2D
+from keras.layers import Dense, Dropout, Flatten
+from keras.layers import Conv1D, MaxPooling1D
+from keras.wrappers.scikit_learn import KerasClassifier
+from PIL import Image
 
-img_root = '3min-image-jpg/'
-feature_data = '3min_flow_feature.csv'
+img_root = '3min-data-dpi/'
+feature_data = '3min_dpi_feature.csv'
+
+num_classes = 5
+# define neural network model
+def base_model():
+    model = Sequential()
+    model.add(Conv1D(32, kernel_size=10, activation='relu', input_shape=(1024, 1)))
+    model.add(Conv1D(64, kernel_size=5, activation='relu'))
+    model.add(MaxPooling1D(pool_size=2))
+    model.add(Dropout(0.25))
+    model.add(Flatten())
+    model.add(Dense(128, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(num_classes, activation='softmax'))
+
+    model.compile(loss=keras.losses.categorical_crossentropy,
+                  optimizer=keras.optimizers.Adadelta(),
+                  metrics=['accuracy'])
+    return model
 
 
 def save_feature():
@@ -36,22 +62,13 @@ def save_feature():
                 labels.append(cate)
                 app_names.append(app)
 
-    # load model
-    with gfile.FastGFile('../inception-2015-12-05/classify_image_graph_def.pb', 'rb') as img:
-        graph_def = tf.GraphDef()
-        graph_def.ParseFromString(img.read())
-        _ = tf.import_graph_def(graph_def, name='')
-
     # generate features
     images_num = len(images)
-    features = np.empty((images_num, 2048))
-    with tf.Session() as sess:
-        next_to_last_tensor = sess.graph.get_tensor_by_name('pool_3:0')
-        for i, img in enumerate(images):
-            print('#{} {} {} ({}/{})\r'.format(i+1, datetime.datetime.now(), path.basename(img), i+1, images_num))
-            image_data = gfile.FastGFile(img, 'rb').read()
-            predictions = sess.run(next_to_last_tensor, {'DecodeJpeg/contents:0': image_data})
-            features[i, :] = np.squeeze(predictions)
+    features = np.empty((images_num, 1024))
+    for i, img in enumerate(images):
+        print('#{} {} {} ({}/{})\r'.format(i+1, datetime.datetime.now(), path.basename(img), i+1, images_num))
+        im = Image.open(img)
+        features[i] = np.array([p for p in im.getdata()])
     df = pd.DataFrame(features)
     df['label'] = labels
     df['app'] = app_names
@@ -60,7 +77,7 @@ def save_feature():
 
 
 if __name__ == '__main__':
-    flag = 2
+    flag = 1
     save_feature()
     df = pd.read_csv(path.join(feature_data), header=0)
 
@@ -68,11 +85,19 @@ if __name__ == '__main__':
         features = df[df.columns.difference(['label', 'app'])].values
         labels = df['label'].values
 
-        X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=42)
-        clf = LinearSVC(C=1.0, loss='squared_hinge', penalty='l2',multi_class='ovr')
-        clf.fit(X_train, y_train)
-        y_pred = clf.predict(X_test)
-        print("Accuracy: {0:0.1f}%".format(accuracy_score(y_test, y_pred) * 100))
+        x_train, x_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=42)
+        # keras中使用Conv1D要将训练数据组织成（n_samples, n_features, 1）的格式
+        x_train = x_train.reshape(x_train.shape[0], x_train.shape[1], 1)
+        x_test = x_test.reshape(x_test.shape[0], x_test.shape[1], 1)
+
+        # 定义模型
+        clf = KerasClassifier(build_fn=base_model, nb_epoch=10, batch_size=32)
+        # 训练和测试
+        clf.fit(x_train, y_train)
+        y_pred = clf.predict(x_test)
+        accuracy = accuracy_score(y_test, y_pred)
+        print('accuracy={}'.format(accuracy))
+        print("\n分类报告：")
 
         confusion_matrix = ConfusionMatrix(y_test, y_pred, display_sum=False)
         print(confusion_matrix)
