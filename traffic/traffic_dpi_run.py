@@ -17,6 +17,7 @@ from pandas_confusion import ConfusionMatrix
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
@@ -78,20 +79,21 @@ def save_feature():
 
 if __name__ == '__main__':
     flag = 1
-    save_feature()
+    #save_feature()
     df = pd.read_csv(path.join(feature_data), header=0)
 
     if flag == 1:
         features = df[df.columns.difference(['label', 'app'])].values
-        labels = df['label'].values
+        labels = df['app'].values
 
         x_train, x_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=42)
         # keras中使用Conv1D要将训练数据组织成（n_samples, n_features, 1）的格式
-        x_train = x_train.reshape(x_train.shape[0], x_train.shape[1], 1)
-        x_test = x_test.reshape(x_test.shape[0], x_test.shape[1], 1)
+        #x_train = x_train.reshape(x_train.shape[0], x_train.shape[1], 1)
+       # x_test = x_test.reshape(x_test.shape[0], x_test.shape[1], 1)
 
         # 定义模型
-        clf = KerasClassifier(build_fn=base_model, nb_epoch=10, batch_size=32)
+        #clf = KerasClassifier(build_fn=base_model, nb_epoch=10, batch_size=32)
+        clf = LogisticRegression()
         # 训练和测试
         clf.fit(x_train, y_train)
         y_pred = clf.predict(x_test)
@@ -113,7 +115,7 @@ if __name__ == '__main__':
                 df_test = df[df.app == app]
                 x_train, y_train = df_train[df.columns.difference(['label', 'app'])].values, df_train['label'].values
                 x_test, y_test = df_test[df.columns.difference(['label', 'app'])].values, df_test['label'].values
-                clf = Pipeline([('std', StandardScaler()), ('clf', SVC())])
+                clf = LogisticRegression()
                 clf.fit(x_train, y_train)
                 y_pred = clf.predict(x_test)
                 accuracy = accuracy_score(y_test, y_pred)

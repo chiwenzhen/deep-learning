@@ -61,7 +61,7 @@ def save_feature():
 
 if __name__ == '__main__':
     flag = 2
-    save_feature()
+    # save_feature()
     df = pd.read_csv(path.join(feature_data), header=0)
 
     if flag == 1:
@@ -77,7 +77,7 @@ if __name__ == '__main__':
         confusion_matrix = ConfusionMatrix(y_test, y_pred, display_sum=False)
         print(confusion_matrix)
     elif flag ==2:
-        cates = ['video', 'live', 'audio', 'radio']
+        cates = ['other', 'video', 'live', 'audio', 'radio']
         for cate in cates:
             total_num = 0.0
             wright_num = 0
